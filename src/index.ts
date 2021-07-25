@@ -1,30 +1,42 @@
 import fs from "fs";
 import path from "path";
+import { getVideoDurationInSeconds } from "get-video-duration";
+import moment from "moment";
 
-const baseFolderName = "D:\\OneDrive\\courses\\Micro Services";
+const baseFolderName = "D:\\OneDrive\\courses\\JavaScript";
 
-const getFolderInfo = async (dir: string) => {
-  // const foldersInside = await fs.promises.readdir(path);
-  const isDirectory = await (await fs.promises.stat(dir)).isDirectory();
-  if (!isDirectory) {
-    return console.log(dir);
-  } else {
-    const directoryContent = await fs.promises.readdir(dir);
-    for (const folder of directoryContent) {
-      const innerDirectoryPath = path.join(dir, folder);
-      getFolderInfo(innerDirectoryPath);
+function walk(directory: string, mp4s: string[] = []) {
+  console.log("SEARCHING FOR MP4...");
+
+  const files = fs.readdirSync(directory);
+  for (let filename of files) {
+    const filepath = path.join(directory, filename);
+    if (fs.statSync(filepath).isDirectory()) {
+      walk(filepath, mp4s);
+    } else if (path.extname(filename) === ".mp4") {
+      mp4s.push(filepath);
+
+      // durations[filepath.split("\\")[4]] = (durations[filepath.split("\\")[4]] || 0) + duration;
     }
   }
 
-  // for (const folder of foldersInside) {
-  //   console.log("folder", folder);
+  return mp4s;
+}
 
-  //   // const stat = await fs.promises.lstat(folder);
-  //   // console.log("stat", stat);
+// console.log(walk(baseFolderName));
 
-  //   // if(stat.isDirectory()){
-  //   //   console.log("inside directory " + stat.)
-  //   // }
-  // }
+const main = async () => {
+  const durations: any = {};
+  for (const x of walk(baseFolderName)) {
+    const duration = await getVideoDurationInSeconds(x);
+    durations[x.split("\\")[4]] = (durations[x.split("\\")[4]] || 0) + duration;
+  }
+  for (const [key, val] of Object.entries(durations)) {
+    durations[key] = moment()
+      .startOf("day")
+      .seconds(val as number)
+      .format("H:mm:ss");
+  }
+  console.log(durations);
 };
-getFolderInfo(baseFolderName);
+main();
